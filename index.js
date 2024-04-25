@@ -66,9 +66,46 @@ async function run() {
             const result = await userCollection.find(query).toArray()
             res.send(result)
         })
+        // update userdata
+        app.patch("/users/:id", async (req, res) => {
+            const id = req.params.id
+            const userInfo = req.body
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    name: userInfo?.name, email: userInfo?.email, studentId: userInfo?.studentId, dob: userInfo?.dob, pob: userInfo?.pob, gender: userInfo?.gender,
+                    maritualStatus: userInfo?.maritualStatus, religion: userInfo?.religion, nationality: userInfo?.nationality, nationalId: userInfo?.nationalId
+                }
+            }
+            const result = await userCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+        app.patch("/users/updateAddress/:id", async (req, res) => {
+            const id = req.params.id
+            const addressInfo = req.body
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    address: addressInfo?.address,
+                    postOffice: addressInfo?.postOffice,
+                    policeStation: addressInfo?.policeStation,
+                    district: addressInfo?.district,
+                    division: addressInfo?.division,
+                    country: addressInfo?.country,
+                    zipCode: addressInfo?.zipCode
+                }
+            }
+            const result = await userCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        // 
+
+        // payment system
         const tran_id = new ObjectId().toString()
         app.post("/registerUser", async (req, res) => {
             const regUserInfo = req.body
+            console.log(regUserInfo)
             // name, email, studentId, department, program, phone, route, transportFee
             console.log(req.body)
             const data = {
@@ -102,6 +139,7 @@ async function run() {
                 ship_country: 'Bangladesh',
             };
             console.log(data)
+            const date = new Date()
             const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
             sslcz.init(data).then(apiResponse => {
                 // Redirect the user to payment gateway
@@ -110,33 +148,34 @@ async function run() {
 
                 const paymentData = {
                     regUserInfo,
+                    paymentDate: date,
                     paidStatus: false,
                     transactionId: tran_id
                 }
-                const result =  registeredUserCollection.insertOne(paymentData)
+                const result = registeredUserCollection.insertOne(paymentData)
 
                 console.log('Redirecting to: ', GatewayPageURL)
             });
             app.post("/registerUser/succeess/:transId", async (req, res) => {
                 console.log(req.params.transId)
-                const query = {transactionId: req.params.transId}
+                const query = { transactionId: req.params.transId }
                 const updateDoc = {
-                    $set:{
+                    $set: {
                         paidStatus: true
                     }
                 }
-                const result= await registeredUserCollection.updateOne(query, updateDoc)
-                if(result.modifiedCount > 0){
+                const result = await registeredUserCollection.updateOne(query, updateDoc)
+                if (result.modifiedCount > 0) {
                     res.redirect(`http://localhost:5173/payment/success/${req.params.transId}`)
 
                 }
             })
             app.post("/registerUser/fail/:transId", async (req, res) => {
                 // console.log(req.params.transId)
-                const query = {transactionId: req.params.transId}
-               
-                const result= await registeredUserCollection.deleteOne(query)
-                if(result.deletedCount){
+                const query = { transactionId: req.params.transId }
+
+                const result = await registeredUserCollection.deleteOne(query)
+                if (result.deletedCount) {
                     res.redirect(`http://localhost:5173/payment/fail/${req.params.transId}`)
 
                 }
@@ -148,6 +187,14 @@ async function run() {
         app.get("/registerUser", async (req, res) => {
 
             const result = await registeredUserCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get("/registerUser/paid/:email", async (req, res) => {
+            const email = req.params.email
+            console.log(email)
+            const query = { "regUserInfo.email": email }
+            const result = await registeredUserCollection.find(query).toArray()
             res.send(result)
         })
 
