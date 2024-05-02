@@ -42,6 +42,7 @@ async function run() {
 
         // create database
         const userCollection = client.db("TrackWise").collection("users")
+        const noticeCollection = client.db("TrackWise").collection("notices")
         const registeredUserCollection = client.db("TrackWise").collection("registerUsers")
 
 
@@ -97,6 +98,13 @@ async function run() {
             }
             const result = await userCollection.updateOne(query, updateDoc)
             res.send(result)
+        })
+
+        // get notices
+        app.get("/notices", async(req, res) => {
+            const result = await noticeCollection.find().toArray();
+            const sortedData = result.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+            res.send(sortedData);
         })
 
         // 
@@ -192,7 +200,7 @@ async function run() {
 
         app.get("/registerUser/paid/:email", async (req, res) => {
             const email = req.params.email
-            console.log(email)
+            // console.log(email)
             const query = { "regUserInfo.email": email }
             const result = await registeredUserCollection.find(query).toArray()
             res.send(result)
