@@ -43,6 +43,7 @@ async function run() {
         // create database
         const userCollection = client.db("TrackWise").collection("users")
         const noticeCollection = client.db("TrackWise").collection("notices")
+        const reviewCollection = client.db("TrackWise").collection("reviews")
         const registeredUserCollection = client.db("TrackWise").collection("registerUsers")
 
 
@@ -100,11 +101,39 @@ async function run() {
             res.send(result)
         })
 
+        // get student data
+        app.get('/students', async (req, res) => {
+            const query = { role: 'Student' }
+            const result = await userCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.get('/staffs', async (req, res) => {
+            const query = { role: 'Staff' }
+            const result = await userCollection.find(query).toArray()
+            res.send(result)
+        })
+        app.delete('/students/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        })
+        app.delete('/staffs/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // get notices
-        app.get("/notices", async(req, res) => {
+        app.get("/notices", async (req, res) => {
             const result = await noticeCollection.find().toArray();
             const sortedData = result.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
             res.send(sortedData);
+        })
+        app.get("/reviews", async (req, res) => {
+            const result = await reviewCollection.find().toArray();
+            res.send(result);
         })
 
         // 
@@ -195,7 +224,8 @@ async function run() {
         app.get("/registerUser", async (req, res) => {
 
             const result = await registeredUserCollection.find().toArray()
-            res.send(result)
+            const sortedData = result.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+            res.send(sortedData)
         })
 
         app.get("/registerUser/paid/:email", async (req, res) => {
@@ -203,6 +233,21 @@ async function run() {
             // console.log(email)
             const query = { "regUserInfo.email": email }
             const result = await registeredUserCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // payment data update
+
+        app.patch("/registerUser/:id", async (req, res) => {
+            const id = req.params.id
+            // console.log(email)
+            const query = { _id: new ObjectId(id)}
+            const updateDoc = {
+                $set:{
+                    clearance: true,
+                }
+            }
+            const result = await registeredUserCollection.updateOne(query, updateDoc)
             res.send(result)
         })
 
